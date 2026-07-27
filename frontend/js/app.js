@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AI VI MẠCH - FRONTEND SCRIPT (GEMINI CLOUD AI API + OLLAMA LOCAL FALLBACK)
+   AI VI MẠCH - FRONTEND SCRIPT (GEMINI CLOUD AI API ROBUST FALLBACK & FIXES)
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Cloud Gemini + Local Ollama Models List
   let availableModelsList = [
     "gemini-1.5-flash",
-    "gemini-2.0-flash-exp",
+    "gemini-2.0-flash",
     "gemini-1.5-pro",
     "vi-mach-ai:latest"
   ];
@@ -324,12 +324,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Stream Response from Google Gemini Cloud API
+  // Robust Stream Response from Google Gemini Cloud API with Multi-Model Fallbacks
   async function streamGeminiCloudResponse(prompt, textWrapper, msgContentElement) {
     let apiKey = getStoredApiKey();
     if (!apiKey) {
-      // Prompt user to input API key if not set
-      const userKey = prompt("Nhập Google Gemini API Key miễn phí của bạn để dùng Web AI (hoặc lấy tại https://aistudio.google.com/app/apikey):");
+      const userKey = window.prompt("Nhập Google Gemini API Key miễn phí của bạn để trò chuyện (hoặc lấy tại https://aistudio.google.com/app/apikey):");
       if (userKey && userKey.trim()) {
         apiKey = userKey.trim();
         localStorage.setItem("gemini_api_key", apiKey);
@@ -347,15 +346,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    const geminiModel = currentSelectedModel.startsWith("gemini-") ? currentSelectedModel : "gemini-1.5-flash";
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:streamGenerateContent?key=${apiKey}&alt=sse`;
-
     const contentsPayload = chatHistory.map(h => ({
       role: h.role === "user" ? "user" : "model",
       parts: [{ text: h.content }]
     }));
 
-    // Inject System Instruction and Web Search Context into last prompt
     if (webSearchContext) {
       contentsPayload[contentsPayload.length - 1].parts[0].text = `${webSearchContext}\n\nCâu hỏi người dùng: ${prompt}`;
     }
@@ -367,53 +362,91 @@ document.addEventListener("DOMContentLoaded", () => {
       contents: contentsPayload
     };
 
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(bodyPayload)
-    });
+    // Candidate models & API versions to try in sequence
+    const selected = currentSelectedModel.startsWith("gemini-") ? currentSelectedModel : "gemini-1.5-flash";
+    const candidates = [
+      { model: selected, ver: "v1beta" },
+      { model: "gemini-2.0-flash", ver: "v1beta" },
+      { model: "gemini-1.5-flash-latest", ver: "v1beta" },
+      { model: "gemini-1.5-flash", ver: "v1" },
+      { model: "gemini-1.5-pro", ver: "v1beta" }
+    ];
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      const msg = errData?.error?.message || `Mã lỗi API: ${res.status}`;
-      throw new Error(`Google Gemini Cloud API: ${msg}`);
-    }
+    let lastError = null;
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-    let fullText = "";
-    let buffer = "";
+    for (const c of candidates) {
+      try {
+        // 1. Try SSE Stream Endpoint
+        const streamEndpoint = `https://generativelanguage.googleapis.com/${c.ver}/models/${c.model}:streamGenerateContent?key=${apiKey}&alt=sse`;
+        const res = await fetch(streamEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyPayload)
+        });
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+        if (res.ok) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let fullText = "";
+          let buffer = "";
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n\n");
-      buffer = lines.pop() || "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const jsonStr = line.replace("data: ", "").trim();
-          if (!jsonStr) continue;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
 
-          try {
-            const data = JSON.parse(jsonStr);
-            const candidates = data.candidates;
-            if (candidates && candidates[0]?.content?.parts[0]?.text) {
-              const textChunk = candidates[0].content.parts[0].text;
-              fullText += textChunk;
-              renderMarkdown(textWrapper, fullText);
-              scrollToBottom();
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const jsonStr = line.replace("data: ", "").trim();
+                if (!jsonStr) continue;
+
+                try {
+                  const data = JSON.parse(jsonStr);
+                  const textChunk = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (textChunk) {
+                    fullText += textChunk;
+                    renderMarkdown(textWrapper, fullText);
+                    scrollToBottom();
+                  }
+                } catch (err) {
+                  console.error("Parse SSE error:", err);
+                }
+              }
             }
-          } catch (err) {
-            console.error("Gemini parse error:", err);
           }
+          if (fullText.trim()) return fullText;
         }
+
+        // 2. Try Standard JSON generateContent Endpoint (Fallback)
+        const standardEndpoint = `https://generativelanguage.googleapis.com/${c.ver}/models/${c.model}:generateContent?key=${apiKey}`;
+        const resStandard = await fetch(standardEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyPayload)
+        });
+
+        if (resStandard.ok) {
+          const data = await resStandard.json();
+          const fullText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (fullText) {
+            renderMarkdown(textWrapper, fullText);
+            scrollToBottom();
+            return fullText;
+          }
+        } else {
+          const errData = await resStandard.json().catch(() => ({}));
+          lastError = errData?.error?.message || `Mã lỗi HTTP: ${resStandard.status}`;
+        }
+
+      } catch (err) {
+        lastError = err.message;
       }
     }
 
-    return fullText;
+    throw new Error(`Google Gemini Cloud API: ${lastError || 'Không thể kết nối mô hình. Hãy kiểm tra lại API Key.'}`);
   }
 
   // Stream Response from Local FastAPI / Ollama Backend
@@ -512,7 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error("Chat error:", err);
-      const errMsg = `⚠️ **Không thể kết nối:** ${err.message}\n\n*Mẹo: Bạn có thể nhấn biểu tượng ⚙️ Cài đặt ở góc trên bên phải để nhập Google Gemini API Key miễn phí và trò chuyện trực tiếp 24/7 mà không cần máy chủ local!*`;
+      const errMsg = `⚠️ **Không thể kết nối:** ${err.message}\n\n*Mẹo: Bạn có thể nhấn biểu tượng ⚙️ Cài đặt ở góc trên bên phải để kiểm tra lại Google Gemini API Key miễn phí!*`;
       renderMarkdown(textWrapper, errMsg, true);
     } finally {
       isGenerating = false;
