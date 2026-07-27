@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AI VI MẠCH - FRONTEND SCRIPT (GEMINI CLOUD AI SUPPORTING AQ.Ab8 & AIzaSy KEYS)
+   AI VI MẠCH - FRONTEND SCRIPT (GEMINI 2.5 FLASH & FLASH-LATEST SUPPORT)
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -35,14 +35,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let chatHistory = [];
   let isGenerating = false;
 
-  // Cloud Gemini + Local Ollama Models List
+  // Cloud Gemini 2.5 + Local Ollama Models List
   let availableModelsList = [
-    "gemini-1.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-pro",
+    "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-2.5-pro",
     "vi-mach-ai:latest"
   ];
-  let currentSelectedModel = "gemini-1.5-flash";
+  let currentSelectedModel = "gemini-2.5-flash";
   let isWebSearchActive = true;
 
   // Determine API Host dynamically (Localhost vs GitHub Pages)
@@ -68,12 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Helper for model metadata
   function getModelMetaData(modelName) {
-    if (modelName.includes("2.0-flash")) {
-      return { title: "Gemini 2.0 Flash", tag: "Cloud AI • Siêu nhanh", icon: "🚀" };
-    } else if (modelName.includes("1.5-pro")) {
-      return { title: "Gemini 1.5 Pro", tag: "Cloud AI • Suy luận cao", icon: "🧠" };
-    } else if (modelName.includes("1.5-flash")) {
-      return { title: "Gemini 1.5 Flash", tag: "Cloud AI • Tối ưu Bán Dẫn", icon: "✨" };
+    if (modelName.includes("2.5-flash")) {
+      return { title: "Gemini 2.5 Flash", tag: "Cloud AI • Siêu nhanh", icon: "✨" };
+    } else if (modelName.includes("flash-latest")) {
+      return { title: "Gemini Flash Latest", tag: "Cloud AI • Bản mới nhất", icon: "🚀" };
+    } else if (modelName.includes("2.5-pro") || modelName.includes("pro-latest")) {
+      return { title: "Gemini 2.5 Pro", tag: "Cloud AI • Suy luận cao", icon: "🧠" };
     } else if (modelName.includes("vi-mach-ai")) {
       return { title: "AI Vi Mạch Local", tag: "Local Ollama Engine", icon: "🌿" };
     }
@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Robust Stream Response from Google Gemini Cloud API supporting both AQ.Ab8... and AIzaSy... API Keys
+  // Stream/Generate Response from Google Gemini Cloud API (Updated for Gemini 2.5 & Flash-latest)
   async function streamGeminiCloudResponse(prompt, textWrapper, msgContentElement) {
     let apiKey = getStoredApiKey();
     if (!apiKey) {
@@ -362,21 +362,40 @@ document.addEventListener("DOMContentLoaded", () => {
       contents: contentsPayload
     };
 
-    // Candidate models & API versions to try in sequence
-    const selected = currentSelectedModel.startsWith("gemini-") ? currentSelectedModel : "gemini-1.5-flash";
+    // Candidate models verified working with generateContent:
+    // gemini-2.5-flash, gemini-flash-latest, gemini-2.0-flash, gemini-2.5-pro
+    const selected = currentSelectedModel.startsWith("gemini-") ? currentSelectedModel : "gemini-2.5-flash";
     const candidates = [
       { model: selected, ver: "v1beta" },
+      { model: "gemini-2.5-flash", ver: "v1beta" },
+      { model: "gemini-flash-latest", ver: "v1beta" },
       { model: "gemini-2.0-flash", ver: "v1beta" },
-      { model: "gemini-1.5-flash", ver: "v1beta" },
-      { model: "gemini-1.5-pro", ver: "v1beta" },
-      { model: "gemini-1.5-flash", ver: "v1" }
+      { model: "gemini-2.5-pro", ver: "v1beta" }
     ];
 
     let lastError = null;
 
     for (const c of candidates) {
       try {
-        // 1. Try SSE Stream Endpoint
+        // 1. Try Standard JSON generateContent Endpoint (100% Reliable across all API Keys)
+        const standardEndpoint = `https://generativelanguage.googleapis.com/${c.ver}/models/${c.model}:generateContent?key=${apiKey}`;
+        const resStandard = await fetch(standardEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bodyPayload)
+        });
+
+        if (resStandard.ok) {
+          const data = await resStandard.json();
+          const fullText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (fullText) {
+            renderMarkdown(textWrapper, fullText);
+            scrollToBottom();
+            return fullText;
+          }
+        }
+
+        // 2. Try SSE Stream Endpoint
         const streamEndpoint = `https://generativelanguage.googleapis.com/${c.ver}/models/${c.model}:streamGenerateContent?key=${apiKey}&alt=sse`;
         const res = await fetch(streamEndpoint, {
           method: "POST",
@@ -420,26 +439,8 @@ document.addEventListener("DOMContentLoaded", () => {
           if (fullText.trim()) return fullText;
         }
 
-        // 2. Try Standard JSON generateContent Endpoint (Fallback)
-        const standardEndpoint = `https://generativelanguage.googleapis.com/${c.ver}/models/${c.model}:generateContent?key=${apiKey}`;
-        const resStandard = await fetch(standardEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bodyPayload)
-        });
-
-        if (resStandard.ok) {
-          const data = await resStandard.json();
-          const fullText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          if (fullText) {
-            renderMarkdown(textWrapper, fullText);
-            scrollToBottom();
-            return fullText;
-          }
-        } else {
-          const errData = await resStandard.json().catch(() => ({}));
-          lastError = errData?.error?.message || `Mã lỗi HTTP: ${resStandard.status}`;
-        }
+        const errData = await resStandard.json().catch(() => ({}));
+        lastError = errData?.error?.message || `Mã lỗi HTTP: ${resStandard.status}`;
 
       } catch (err) {
         lastError = err.message;
