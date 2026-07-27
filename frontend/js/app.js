@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AI VI MẠCH - FRONTEND SCRIPT (FIXED GITHUB PAGES HANG & WEB SEARCH RAG)
+   AI VI MẠCH - FRONTEND SCRIPT (FIXED MODEL DROPDOWN SELECTION & GITHUB PAGES)
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -49,43 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gfm: true
   });
 
-  // Immediately initialize default model dropdown state to prevent hanging
-  const initialMeta = getModelMetaData(currentSelectedModel);
-  if (selectedModelTitle) {
-    selectedModelTitle.textContent = `${initialMeta.title}`;
-  }
-  renderModelDropdownItems(availableModelsList);
-
-  // 1. Sidebar Toggling
-  openSidebarBtn?.addEventListener("click", () => sidebar.classList.remove("collapsed"));
-  closeSidebarBtn?.addEventListener("click", () => sidebar.classList.add("collapsed"));
-
-  // 2. Web Search Toggle Logic
-  webSearchToggleBtn?.addEventListener("click", () => {
-    isWebSearchActive = !isWebSearchActive;
-    if (isWebSearchActive) {
-      webSearchToggleBtn.classList.add("active");
-    } else {
-      webSearchToggleBtn.classList.remove("active");
-    }
-  });
-
-  // 3. Custom Glassmorphic Model Dropdown Logic
-  dropdownTrigger.addEventListener("click", (e) => {
-    e.stopPropagation();
-    customModelDropdown.classList.toggle("open");
-    dropdownMenu.classList.toggle("show");
-  });
-
-  document.addEventListener("click", () => {
-    customModelDropdown.classList.remove("open");
-    dropdownMenu.classList.remove("show");
-  });
-
-  dropdownMenu.addEventListener("click", (e) => {
-    e.stopPropagation();
-  });
-
+  // Helper for model metadata
   function getModelMetaData(modelName) {
     if (modelName.includes("vi-mach-ai")) {
       return { title: "AI Vi Mạch Local", tag: "Chuyên biệt Bán Dẫn", icon: "🌿" };
@@ -97,7 +61,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return { title: modelName, tag: "Ollama Model", icon: "🤖" };
   }
 
+  // Render items inside dropdown list
   function renderModelDropdownItems(models) {
+    if (!modelItemsList) return;
     if (!models || models.length === 0) {
       modelItemsList.innerHTML = `<div class="model-item"><span style="color:var(--text-muted);">Không tìm thấy model</span></div>`;
       return;
@@ -116,29 +82,83 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
     }).join("");
+  }
 
-    modelItemsList.querySelectorAll(".model-item").forEach(item => {
-      item.addEventListener("click", () => {
-        const modelName = item.getAttribute("data-model");
-        currentSelectedModel = modelName;
-        const meta = getModelMetaData(modelName);
-        selectedModelTitle.textContent = `${meta.title}`;
-        
-        customModelDropdown.classList.remove("open");
-        dropdownMenu.classList.remove("show");
-        renderModelDropdownItems(availableModelsList);
-      });
+  // Immediately initialize dropdown list and selected model title
+  const initialMeta = getModelMetaData(currentSelectedModel);
+  if (selectedModelTitle) {
+    selectedModelTitle.textContent = initialMeta.title;
+  }
+  const triggerIcon = dropdownTrigger?.querySelector(".trigger-icon");
+  if (triggerIcon) {
+    triggerIcon.textContent = initialMeta.icon;
+  }
+  renderModelDropdownItems(availableModelsList);
+
+  // Event Delegation for Dropdown Model Selection (Bulletproof Click Handling)
+  if (modelItemsList) {
+    modelItemsList.addEventListener("click", (e) => {
+      const item = e.target.closest(".model-item");
+      if (!item) return;
+      
+      const modelName = item.getAttribute("data-model");
+      if (!modelName) return;
+
+      currentSelectedModel = modelName;
+      const meta = getModelMetaData(modelName);
+
+      if (selectedModelTitle) {
+        selectedModelTitle.textContent = meta.title;
+      }
+      const iconSpan = dropdownTrigger?.querySelector(".trigger-icon");
+      if (iconSpan) {
+        iconSpan.textContent = meta.icon;
+      }
+
+      customModelDropdown.classList.remove("open");
+      dropdownMenu.classList.remove("show");
+      renderModelDropdownItems(availableModelsList);
     });
   }
 
+  // 1. Sidebar Toggling
+  openSidebarBtn?.addEventListener("click", () => sidebar.classList.remove("collapsed"));
+  closeSidebarBtn?.addEventListener("click", () => sidebar.classList.add("collapsed"));
+
+  // 2. Web Search Toggle Logic
+  webSearchToggleBtn?.addEventListener("click", () => {
+    isWebSearchActive = !isWebSearchActive;
+    if (isWebSearchActive) {
+      webSearchToggleBtn.classList.add("active");
+    } else {
+      webSearchToggleBtn.classList.remove("active");
+    }
+  });
+
+  // 3. Custom Glassmorphic Model Dropdown Trigger Logic
+  dropdownTrigger?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    customModelDropdown.classList.toggle("open");
+    dropdownMenu.classList.toggle("show");
+  });
+
+  document.addEventListener("click", () => {
+    customModelDropdown?.classList.remove("open");
+    dropdownMenu?.classList.remove("show");
+  });
+
+  dropdownMenu?.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+
   // 4. Enable/Disable Send Button
-  chatInput.addEventListener("input", () => {
+  chatInput?.addEventListener("input", () => {
     chatInput.style.height = "auto";
     chatInput.style.height = Math.min(chatInput.scrollHeight, 180) + "px";
     sendBtn.disabled = chatInput.value.trim().length === 0 || isGenerating;
   });
 
-  chatInput.addEventListener("keydown", (e) => {
+  chatInput?.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (!sendBtn.disabled) {
@@ -161,7 +181,9 @@ document.addEventListener("DOMContentLoaded", () => {
               currentSelectedModel = availableModelsList[0];
             }
             const meta = getModelMetaData(currentSelectedModel);
-            selectedModelTitle.textContent = `${meta.title}`;
+            if (selectedModelTitle) selectedModelTitle.textContent = meta.title;
+            const iconSpan = dropdownTrigger?.querySelector(".trigger-icon");
+            if (iconSpan) iconSpan.textContent = meta.icon;
             renderModelDropdownItems(availableModelsList);
           }
         } else {
@@ -182,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.documentElement.setAttribute("data-theme", savedTheme);
   updateThemeIcon(savedTheme);
 
-  themeToggleBtn.addEventListener("click", () => {
+  themeToggleBtn?.addEventListener("click", () => {
     const current = document.documentElement.getAttribute("data-theme");
     const next = current === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
@@ -191,9 +213,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function updateThemeIcon(theme) {
-    themeToggleBtn.innerHTML = theme === "dark" 
-      ? '<i class="fa-solid fa-sun"></i>' 
-      : '<i class="fa-solid fa-moon"></i>';
+    if (themeToggleBtn) {
+      themeToggleBtn.innerHTML = theme === "dark" 
+        ? '<i class="fa-solid fa-sun"></i>' 
+        : '<i class="fa-solid fa-moon"></i>';
+    }
   }
 
   // 7. Quick Prompts Click
@@ -209,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 8. New Chat Reset
-  newChatBtn.addEventListener("click", () => {
+  newChatBtn?.addEventListener("click", () => {
     if (isGenerating) return;
     chatHistory = [];
     chatContainer.innerHTML = "";
@@ -218,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 9. Form Submit & Streaming Chat
-  chatForm.addEventListener("submit", async (e) => {
+  chatForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const prompt = chatInput.value.trim();
     if (!prompt || isGenerating) return;
@@ -413,6 +437,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function scrollToBottom() {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
   }
 });
