@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Vi Mạch - ChatGPT Style Eco Green & Real-time Web Search</title>
+  
+  <!-- Meta & Icons -->
+  <meta name="description" content="Giao diện Web Chatbot AI Vi Mạch phong cách ChatGPT với tính năng Tra cứu Web Real-time và màu chủ đề Xanh lá Eco-Green.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Markdown & Syntax Highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  
+  <!-- KaTeX Math -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="frontend/css/style.css">
+</head>
+<body>
+
+  <div class="app-layout">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <span class="brand-logo">🌿</span>
+          <span class="brand-name">AI Vi Mạch</span>
+        </div>
+        <button class="icon-btn" id="closeSidebarBtn" title="Đóng thanh bên">
+          <i class="fa-solid fa-sidebar"></i>
+        </button>
+      </div>
+
+      <button class="new-chat-btn" id="newChatBtn">
+        <i class="fa-solid fa-pen-to-square"></i>
+        <span>Cuộc trò chuyện mới</span>
+      </button>
+
+      <!-- History / Topics List -->
+      <div class="sidebar-scroll">
+        <div class="history-group">
+          <div class="group-title">Gợi ý tra cứu Vi Mạch</div>
+          
+          <div class="chat-item" data-prompt="Đánh giá con chip Apple A17 pro có thân thiện với môi trường không">
+            <i class="fa-regular fa-message"></i>
+            <span>Đánh giá chip Apple A17 Pro</span>
+          </div>
+
+          <div class="chat-item" data-prompt="Giải thích quy trình thiết kế vi mạch VLSI từ RTL đến GDSII">
+            <i class="fa-regular fa-message"></i>
+            <span>Quy trình thiết kế VLSI</span>
+          </div>
+
+          <div class="chat-item" data-prompt="Viết code Verilog cho bộ đếm 8-bit nhị phân có tín hiệu Reset bất đồng bộ">
+            <i class="fa-regular fa-message"></i>
+            <span>Code Verilog/VHDL</span>
+          </div>
+
+          <div class="chat-item" data-prompt="So sánh ưu và nhược điểm của vật liệu bán dẫn Silicon (Si) và Gallium Nitride (GaN)">
+            <i class="fa-regular fa-message"></i>
+            <span>Vật liệu Si vs GaN</span>
+          </div>
+
+          <div class="chat-item" data-prompt="Trình bày nguyên lý hoạt động của công nghệ quang khắc EUV Lithography trong chế tạo chíp 3nm">
+            <i class="fa-regular fa-message"></i>
+            <span>Quang khắc EUV Lithography</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="profile-avatar">🌿</div>
+          <div class="profile-info">
+            <div class="profile-name">Vi Mạch Eco AI</div>
+            <div class="profile-status">Web Search Real-time RAG</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-area">
+      
+      <!-- Top Navigation Header -->
+      <header class="top-nav">
+        <div class="top-left">
+          <button class="icon-btn" id="openSidebarBtn" title="Mở thanh bên">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          
+          <!-- Custom Model Dropdown -->
+          <div class="custom-model-dropdown" id="customModelDropdown">
+            <button type="button" class="dropdown-trigger" id="dropdownTrigger">
+              <span class="trigger-icon">🌿</span>
+              <span class="trigger-text" id="selectedModelTitle">Đang tải mô hình...</span>
+              <i class="fa-solid fa-chevron-down trigger-arrow"></i>
+            </button>
+
+            <div class="dropdown-menu" id="dropdownMenu">
+              <div class="menu-header">Mô hình AI Bán Dẫn</div>
+              <div class="model-items-list" id="modelItemsList">
+                <!-- Populated via JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="top-right">
+          <div class="eco-badge" id="statusBadge">
+            <span class="status-dot"></span>
+            <span id="statusText">Đang kết nối...</span>
+          </div>
+
+          <button class="icon-btn" id="themeToggleBtn" title="Đổi giao diện Tối / Sáng">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Chat Messages Container -->
+      <div class="chat-container" id="chatContainer">
+        
+        <!-- Welcome Screen -->
+        <div class="welcome-screen" id="welcomeScreen">
+          <div class="welcome-badge">🌐 Tra cứu Web Real-time & Bán Dẫn</div>
+          <h1 class="welcome-title">Hôm nay bạn muốn tìm hiểu gì?</h1>
+
+          <!-- Prompt Cards Grid -->
+          <div class="prompt-cards-grid">
+            <div class="card-option" data-prompt="Đánh giá con chip Apple A17 pro có thân thiện với môi trường không">
+              <div class="card-icon"><i class="fa-solid fa-leaf"></i></div>
+              <div class="card-content">
+                <div class="card-title">Đánh giá chip Apple A17 Pro</div>
+                <div class="card-desc">Phân tích công nghệ 3nm, điện năng & vật liệu tái chế</div>
+              </div>
+            </div>
+
+            <div class="card-option" data-prompt="Hướng dẫn quy trình thiết kế vi mạch tích hợp từ mô tả RTL đến file layout GDSII">
+              <div class="card-icon"><i class="fa-solid fa-microchip"></i></div>
+              <div class="card-content">
+                <div class="card-title">Quy trình thiết kế VLSI</div>
+                <div class="card-desc">Từ RTL Synthesis đến Layout & DRC/LVS</div>
+              </div>
+            </div>
+
+            <div class="card-option" data-prompt="Viết code Verilog mẫu cho bộ nhân 4-bit kèm theo file Testbench để mô phỏng">
+              <div class="card-icon"><i class="fa-solid fa-code"></i></div>
+              <div class="card-content">
+                <div class="card-title">Lập trình Verilog / VHDL</div>
+                <div class="card-desc">Tạo module thiết kế và script mô phỏng</div>
+              </div>
+            </div>
+
+            <div class="card-option" data-prompt="Phân tích đặc tính vật lý và ứng dụng của bán dẫn Gallium Nitride (GaN) trong bộ đổi nguồn">
+              <div class="card-icon"><i class="fa-solid fa-atom"></i></div>
+              <div class="card-content">
+                <div class="card-title">Vật liệu Bán Dẫn GaN vs Si</div>
+                <div class="card-desc">So sánh Si, SiC và GaN trong công nghiệp</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Floating Input Area -->
+      <div class="bottom-input-wrapper">
+        <form class="chat-input-box" id="chatForm">
+          
+          <!-- Web Search Toggle Button -->
+          <button type="button" class="web-search-btn active" id="webSearchToggleBtn" title="Bật/tắt Tìm kiếm Web Real-time">
+            <i class="fa-solid fa-globe"></i>
+            <span>Tra cứu Web</span>
+          </button>
+
+          <textarea 
+            id="chatInput" 
+            placeholder="Hỏi AI Vi Mạch (tự động tra cứu Web real-time thông tin chip, bán dẫn...)" 
+            rows="1"></textarea>
+
+          <button type="submit" class="submit-btn" id="sendBtn" title="Gửi câu hỏi" disabled>
+            <i class="fa-solid fa-arrow-up"></i>
+          </button>
+        </form>
+
+        <div class="input-disclaimer">
+          AI Vi Mạch tích hợp tìm kiếm Web real-time. Hãy kiểm tra các thông tin kỹ thuật quan trọng.
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- App Script -->
+  <script src="frontend/js/app.js"></script>
+</body>
+</html>
