@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AI VI MẠCH - FRONTEND SCRIPT (GEMINI 2.5 FLASH & FLASH-LATEST SUPPORT)
+   AI VI MẠCH - FRONTEND SCRIPT (ROBUST SIDEBAR TOGGLE & LOCAL AI FALLBACK)
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -172,9 +172,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 1. Sidebar Toggling
-  openSidebarBtn?.addEventListener("click", () => sidebar.classList.toggle("collapsed"));
-  closeSidebarBtn?.addEventListener("click", () => sidebar.classList.add("collapsed"));
+  // 1. Bulletproof Sidebar Toggling (Supports both 3-lines button & X button)
+  function toggleSidebar(e) {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    if (sidebar) {
+      sidebar.classList.toggle("collapsed");
+    }
+  }
+
+  if (openSidebarBtn) {
+    openSidebarBtn.addEventListener("click", toggleSidebar);
+  }
+  if (closeSidebarBtn) {
+    closeSidebarBtn.addEventListener("click", toggleSidebar);
+  }
 
   // 2. Web Search Toggle Logic
   webSearchToggleBtn?.addEventListener("click", () => {
@@ -324,16 +338,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Stream/Generate Response from Google Gemini Cloud API (Updated for Gemini 2.5 & Flash-latest)
+  // Stream/Generate Response from Google Gemini Cloud API
   async function streamGeminiCloudResponse(prompt, textWrapper, msgContentElement) {
     let apiKey = getStoredApiKey();
     if (!apiKey) {
-      const userKey = window.prompt("Nhập Google Gemini API Key của bạn:");
+      apiKeyModal?.classList.add("show");
+      const userKey = window.prompt("Nhập Google Gemini API Key của bạn (bắt đầu bằng 'AQ.Ab8...' hoặc 'AIzaSy...'):");
       if (userKey && userKey.trim()) {
         apiKey = userKey.trim();
         localStorage.setItem("gemini_api_key", apiKey);
       } else {
-        throw new Error("Cần có Google Gemini API Key để trò chuyện trực tiếp trên Cloud. Vui lòng nhấn nút ⚙️ Cài đặt ở góc trên bên phải để dán Key!");
+        throw new Error("Cần có Google Gemini API Key để trò chuyện trực tiếp trên Cloud. Cửa sổ ⚙️ Cài đặt đang mở, hãy dán mã API Key của bạn!");
       }
     }
 
@@ -362,8 +377,6 @@ document.addEventListener("DOMContentLoaded", () => {
       contents: contentsPayload
     };
 
-    // Candidate models verified working with generateContent:
-    // gemini-2.5-flash, gemini-flash-latest, gemini-2.0-flash, gemini-2.5-pro
     const selected = currentSelectedModel.startsWith("gemini-") ? currentSelectedModel : "gemini-2.5-flash";
     const candidates = [
       { model: selected, ver: "v1beta" },
@@ -377,7 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     for (const c of candidates) {
       try {
-        // 1. Try Standard JSON generateContent Endpoint (100% Reliable across all API Keys)
+        // 1. Try Standard JSON generateContent Endpoint
         const standardEndpoint = `https://generativelanguage.googleapis.com/${c.ver}/models/${c.model}:generateContent?key=${apiKey}`;
         const resStandard = await fetch(standardEndpoint, {
           method: "POST",
@@ -450,7 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
     throw new Error(`Google Gemini Cloud API: ${lastError || 'Không thể kết nối mô hình. Hãy kiểm tra lại API Key.'}`);
   }
 
-  // Stream Response from Local FastAPI / Ollama Backend
+  // Stream Response from Local FastAPI / Ollama Backend (with Automatic Fallback)
   async function streamLocalOllamaResponse(prompt, textWrapper, msgContentElement) {
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
@@ -510,12 +523,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return fullText;
 
     } catch (err) {
-      const apiKey = getStoredApiKey();
-      if (apiKey) {
-        console.warn("Local server unreachable, automatically falling back to Gemini Cloud AI...");
+      console.warn("Local server unreachable, attempting Gemini Cloud AI fallback...");
+      renderMarkdown(textWrapper, "⚡ *Server Local chưa bật. Đang tự động chuyển mượt sang Google Gemini Cloud AI...*\n\n");
+      try {
         return await streamGeminiCloudResponse(prompt, textWrapper, msgContentElement);
+      } catch (cloudErr) {
+        apiKeyModal?.classList.add("show");
+        throw new Error(`Chưa thể kết nối Server Local (Ollama) và chưa cấu hình Google Gemini Cloud API.\n\n*Cách xử lý:* Bạn hãy dán mã API Key của bạn vào bảng Cài đặt ⚙️ vừa mở để dùng AI Đám mây 24/7 trực tuyến!`);
       }
-      throw new Error(`Chưa kết nối được Server Local! Để sử dụng 'AI Vi Mạch Local' (Ollama), bạn hãy bật file 'Run_Web_AI_ViMach.bat' trong thư mục máy tính của bạn.\n\n*Hoặc chọn mô hình 'Gemini 2.5 Flash' trên thanh menu để trò chuyện trực tiếp 24/7 từ Đám mây!*`);
     }
   }
 
@@ -556,7 +571,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error("Chat error:", err);
-      const errMsg = `⚠️ **Không thể kết nối:** ${err.message}\n\n*Mẹo: Bạn có thể nhấn biểu tượng ⚙️ Cài đặt ở góc trên bên phải để kiểm tra lại Google Gemini API Key!*`;
+      const errMsg = `⚠️ **Thông báo kết nối:** ${err.message}`;
       renderMarkdown(textWrapper, errMsg, true);
     } finally {
       isGenerating = false;
