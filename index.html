@@ -103,31 +103,37 @@
           <!-- Custom Model Dropdown -->
           <div class="custom-model-dropdown" id="customModelDropdown">
             <button type="button" class="dropdown-trigger" id="dropdownTrigger">
-              <span class="trigger-icon">🌿</span>
-              <span class="trigger-text" id="selectedModelTitle">AI Vi Mạch Local</span>
+              <span class="trigger-icon">✨</span>
+              <span class="trigger-text" id="selectedModelTitle">Gemini 1.5 Flash</span>
               <i class="fa-solid fa-chevron-down trigger-arrow"></i>
             </button>
 
             <div class="dropdown-menu" id="dropdownMenu">
               <div class="menu-header">Mô hình AI Bán Dẫn</div>
               <div class="model-items-list" id="modelItemsList">
-                <div class="model-item active" data-model="vi-mach-ai:latest">
+                <div class="model-item active" data-model="gemini-1.5-flash">
                   <div class="model-item-info">
-                    <span class="model-item-name">🌿 AI Vi Mạch Local</span>
-                    <span class="model-item-tag">Chuyên biệt Bán Dẫn</span>
+                    <span class="model-item-name">✨ Gemini 1.5 Flash</span>
+                    <span class="model-item-tag">Cloud AI • Tối ưu Bán Dẫn</span>
                   </div>
                   <i class="fa-solid fa-check model-item-check"></i>
                 </div>
-                <div class="model-item" data-model="qwen2.5:1.5b">
+                <div class="model-item" data-model="gemini-2.0-flash-exp">
                   <div class="model-item-info">
-                    <span class="model-item-name">⚡ Qwen 2.5 (1.5B)</span>
-                    <span class="model-item-tag">Tốc độ & Suy luận cao</span>
+                    <span class="model-item-name">🚀 Gemini 2.0 Flash</span>
+                    <span class="model-item-tag">Cloud AI • Siêu nhanh</span>
                   </div>
                 </div>
-                <div class="model-item" data-model="qwen2.5:0.5b">
+                <div class="model-item" data-model="gemini-1.5-pro">
                   <div class="model-item-info">
-                    <span class="model-item-name">🚀 Qwen 2.5 (0.5B)</span>
-                    <span class="model-item-tag">Siêu nhẹ & Nhanh</span>
+                    <span class="model-item-name">🧠 Gemini 1.5 Pro</span>
+                    <span class="model-item-tag">Cloud AI • Suy luận cao</span>
+                  </div>
+                </div>
+                <div class="model-item" data-model="vi-mach-ai:latest">
+                  <div class="model-item-info">
+                    <span class="model-item-name">🌿 AI Vi Mạch Local</span>
+                    <span class="model-item-tag">Local Ollama Engine</span>
                   </div>
                 </div>
               </div>
@@ -138,8 +144,12 @@
         <div class="top-right">
           <div class="eco-badge" id="statusBadge">
             <span class="status-dot"></span>
-            <span id="statusText">Sẵn sàng (Local Engine)</span>
+            <span id="statusText">Gemini Cloud Online</span>
           </div>
+
+          <button class="icon-btn" id="openApiKeyModalBtn" title="Cài đặt API Key Gemini Cloud">
+            <i class="fa-solid fa-gear"></i>
+          </button>
 
           <button class="icon-btn" id="themeToggleBtn" title="Đổi giao diện Tối / Sáng">
             <i class="fa-solid fa-moon"></i>
@@ -152,7 +162,7 @@
         
         <!-- Welcome Screen -->
         <div class="welcome-screen" id="welcomeScreen">
-          <div class="welcome-badge">🌐 Tra cứu Web Real-time & Bán Dẫn</div>
+          <div class="welcome-badge">🌐 Gemini Cloud AI & Tra cứu Web Real-time</div>
           <h1 class="welcome-title">Hôm nay bạn muốn tìm hiểu gì?</h1>
 
           <!-- Prompt Cards Grid -->
@@ -219,6 +229,29 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- API Key Settings Modal -->
+  <div class="api-modal" id="apiKeyModal">
+    <div class="api-modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key"></i> Cài đặt Google Gemini Cloud API</h3>
+        <button class="icon-btn" id="closeApiKeyModalBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Trang web sử dụng <strong>Google Gemini Flash API</strong> để sinh câu trả lời trực tuyến 24/7 từ Đám mây mà không cần bật máy tính cá nhân.</p>
+        <div class="input-group">
+          <label for="apiKeyInput">Google Gemini API Key:</label>
+          <input type="password" id="apiKeyInput" placeholder="Nhập API Key của bạn (AIzaSy...)" />
+        </div>
+        <div class="modal-hint">
+          <i class="fa-solid fa-circle-info"></i> Bạn có thể lấy API Key miễn phí 100% tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" id="saveApiKeyBtn">Lưu API Key</button>
+      </div>
+    </div>
   </div>
 
   <!-- App Script -->

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AI VI MẠCH - FRONTEND SCRIPT (FIXED MODEL DROPDOWN SELECTION & GITHUB PAGES)
+   AI VI MẠCH - FRONTEND SCRIPT (GEMINI CLOUD AI API + OLLAMA LOCAL FALLBACK)
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,15 +25,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const modelItemsList = document.getElementById("modelItemsList");
   const selectedModelTitle = document.getElementById("selectedModelTitle");
 
+  // API Key Settings Modal Elements
+  const apiKeyModal = document.getElementById("apiKeyModal");
+  const openApiKeyModalBtn = document.getElementById("openApiKeyModalBtn");
+  const closeApiKeyModalBtn = document.getElementById("closeApiKeyModalBtn");
+  const apiKeyInput = document.getElementById("apiKeyInput");
+  const saveApiKeyBtn = document.getElementById("saveApiKeyBtn");
+
   let chatHistory = [];
   let isGenerating = false;
-  let availableModelsList = ["vi-mach-ai:latest", "qwen2.5:1.5b", "qwen2.5:0.5b"];
-  let currentSelectedModel = "vi-mach-ai:latest";
+
+  // Cloud Gemini + Local Ollama Models List
+  let availableModelsList = [
+    "gemini-1.5-flash",
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-pro",
+    "vi-mach-ai:latest"
+  ];
+  let currentSelectedModel = "gemini-1.5-flash";
   let isWebSearchActive = true;
 
   // Determine API Host dynamically (Localhost vs GitHub Pages)
   const isLocalHost = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
   const API_BASE_URL = isLocalHost ? "" : "http://localhost:8000";
+
+  // System Instruction for Semiconductor Expertise
+  const SYSTEM_INSTRUCTION = `Bạn là AI Vi Mạch - Trợ lý Trí tuệ Nhân tạo Chuyên sâu về Thiết kế Vi Mạch (VLSI/IC Design), Bán dẫn, Vật liệu Si/GaN/SiC, Quang khắc EUV Lithography, và Lập trình Hardware (Verilog/VHDL). Hãy trả lời bằng tiếng Việt chuyên nghiệp, sắc bén, định dạng Markdown đẹp mắt, có ví dụ và công thức rõ ràng.`;
 
   // Marked Config
   marked.setOptions({
@@ -51,14 +68,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Helper for model metadata
   function getModelMetaData(modelName) {
-    if (modelName.includes("vi-mach-ai")) {
-      return { title: "AI Vi Mạch Local", tag: "Chuyên biệt Bán Dẫn", icon: "🌿" };
-    } else if (modelName.includes("1.5b")) {
-      return { title: "Qwen 2.5 (1.5B)", tag: "Tốc độ & Suy luận cao", icon: "⚡" };
-    } else if (modelName.includes("0.5b")) {
-      return { title: "Qwen 2.5 (0.5B)", tag: "Siêu nhẹ & Nhanh", icon: "🚀" };
+    if (modelName.includes("2.0-flash")) {
+      return { title: "Gemini 2.0 Flash", tag: "Cloud AI • Siêu nhanh", icon: "🚀" };
+    } else if (modelName.includes("1.5-pro")) {
+      return { title: "Gemini 1.5 Pro", tag: "Cloud AI • Suy luận cao", icon: "🧠" };
+    } else if (modelName.includes("1.5-flash")) {
+      return { title: "Gemini 1.5 Flash", tag: "Cloud AI • Tối ưu Bán Dẫn", icon: "✨" };
+    } else if (modelName.includes("vi-mach-ai")) {
+      return { title: "AI Vi Mạch Local", tag: "Local Ollama Engine", icon: "🌿" };
     }
-    return { title: modelName, tag: "Ollama Model", icon: "🤖" };
+    return { title: modelName, tag: "AI Model", icon: "🤖" };
   }
 
   // Render items inside dropdown list
@@ -84,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
-  // Immediately initialize dropdown list and selected model title
+  // Initialize dropdown title & icon
   const initialMeta = getModelMetaData(currentSelectedModel);
   if (selectedModelTitle) {
     selectedModelTitle.textContent = initialMeta.title;
@@ -95,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   renderModelDropdownItems(availableModelsList);
 
-  // Event Delegation for Dropdown Model Selection (Bulletproof Click Handling)
+  // Event Delegation for Model Dropdown
   if (modelItemsList) {
     modelItemsList.addEventListener("click", (e) => {
       const item = e.target.closest(".model-item");
@@ -115,9 +134,41 @@ document.addEventListener("DOMContentLoaded", () => {
         iconSpan.textContent = meta.icon;
       }
 
-      customModelDropdown.classList.remove("open");
-      dropdownMenu.classList.remove("show");
+      customModelDropdown?.classList.remove("open");
+      dropdownMenu?.classList.remove("show");
       renderModelDropdownItems(availableModelsList);
+    });
+  }
+
+  // API Key Storage Logic
+  function getStoredApiKey() {
+    return localStorage.getItem("gemini_api_key") || "";
+  }
+
+  if (openApiKeyModalBtn) {
+    openApiKeyModalBtn.addEventListener("click", () => {
+      apiKeyInput.value = getStoredApiKey();
+      apiKeyModal.classList.add("show");
+    });
+  }
+
+  if (closeApiKeyModalBtn) {
+    closeApiKeyModalBtn.addEventListener("click", () => {
+      apiKeyModal.classList.remove("show");
+    });
+  }
+
+  if (saveApiKeyBtn) {
+    saveApiKeyBtn.addEventListener("click", () => {
+      const val = apiKeyInput.value.trim();
+      if (val) {
+        localStorage.setItem("gemini_api_key", val);
+        alert("Đã lưu Google Gemini API Key thành công!");
+      } else {
+        localStorage.removeItem("gemini_api_key");
+        alert("Đã xóa API Key.");
+      }
+      apiKeyModal.classList.remove("show");
     });
   }
 
@@ -135,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 3. Custom Glassmorphic Model Dropdown Trigger Logic
+  // 3. Custom Dropdown Trigger
   dropdownTrigger?.addEventListener("click", (e) => {
     e.stopPropagation();
     customModelDropdown.classList.toggle("open");
@@ -169,31 +220,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 5. Health Status Polling
   async function checkServerStatus() {
+    if (currentSelectedModel.startsWith("gemini-")) {
+      statusText.textContent = "Gemini Cloud Online";
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE_URL}/api/status`);
       if (res.ok) {
         const data = await res.json();
         if (data.ollama_running) {
-          statusText.textContent = "Ollama Online";
-          if (data.available_models && data.available_models.length > 0) {
-            availableModelsList = data.available_models;
-            if (!availableModelsList.includes(currentSelectedModel)) {
-              currentSelectedModel = availableModelsList[0];
-            }
-            const meta = getModelMetaData(currentSelectedModel);
-            if (selectedModelTitle) selectedModelTitle.textContent = meta.title;
-            const iconSpan = dropdownTrigger?.querySelector(".trigger-icon");
-            if (iconSpan) iconSpan.textContent = meta.icon;
-            renderModelDropdownItems(availableModelsList);
-          }
+          statusText.textContent = "Ollama Local Online";
         } else {
           statusText.textContent = "Đang mở Ollama...";
         }
       } else {
-        statusText.textContent = "Sẵn sàng (Local Engine)";
+        statusText.textContent = "Sẵn sàng (Cloud AI)";
       }
     } catch (err) {
-      statusText.textContent = isLocalHost ? "Ngoại tuyến" : "Sẵn sàng (Local Engine)";
+      statusText.textContent = "Sẵn sàng (Cloud AI)";
     }
   }
   checkServerStatus();
@@ -241,7 +285,197 @@ document.addEventListener("DOMContentLoaded", () => {
     welcomeScreen.style.display = "flex";
   });
 
-  // 9. Form Submit & Streaming Chat
+  // Client-side Real-time Web Search Context Fetcher
+  async function fetchClientWebSearchSources(query) {
+    try {
+      const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&no_redirect=1`;
+      const res = await fetch(url);
+      if (!res.ok) return { ragText: "", sources: [] };
+      const data = await res.json();
+
+      const sources = [];
+      let ragText = "";
+
+      if (data.AbstractText) {
+        sources.push({
+          title: data.Heading || "DuckDuckGo Knowledge",
+          url: data.AbstractURL || "https://duckduckgo.com",
+          snippet: data.AbstractText
+        });
+        ragText += `[Nguồn Web: ${data.Heading}]\n${data.AbstractText}\n\n`;
+      }
+
+      if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+        data.RelatedTopics.slice(0, 3).forEach(t => {
+          if (t.Text && t.FirstURL) {
+            sources.push({
+              title: t.Text.slice(0, 45) + "...",
+              url: t.FirstURL,
+              snippet: t.Text
+            });
+            ragText += `[Nguồn Web]: ${t.Text}\n`;
+          }
+        });
+      }
+
+      return { ragText, sources };
+    } catch (e) {
+      return { ragText: "", sources: [] };
+    }
+  }
+
+  // Stream Response from Google Gemini Cloud API
+  async function streamGeminiCloudResponse(prompt, textWrapper, msgContentElement) {
+    let apiKey = getStoredApiKey();
+    if (!apiKey) {
+      // Prompt user to input API key if not set
+      const userKey = prompt("Nhập Google Gemini API Key miễn phí của bạn để dùng Web AI (hoặc lấy tại https://aistudio.google.com/app/apikey):");
+      if (userKey && userKey.trim()) {
+        apiKey = userKey.trim();
+        localStorage.setItem("gemini_api_key", apiKey);
+      } else {
+        throw new Error("Cần có Google Gemini API Key để trò chuyện trực tiếp trên Cloud. Vui lòng nhấn nút ⚙️ Cài đặt ở góc trên bên phải để nhập Key miễn phí!");
+      }
+    }
+
+    let webSearchContext = "";
+    if (isWebSearchActive) {
+      const searchRes = await fetchClientWebSearchSources(prompt);
+      if (searchRes.sources && searchRes.sources.length > 0) {
+        renderSourcesList(msgContentElement, searchRes.sources);
+        webSearchContext = `Dưới đây là thông tin tra cứu Web real-time liên quan:\n${searchRes.ragText}\n Hãy sử dụng thông tin này để trả lời đầy đủ.`;
+      }
+    }
+
+    const geminiModel = currentSelectedModel.startsWith("gemini-") ? currentSelectedModel : "gemini-1.5-flash";
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:streamGenerateContent?key=${apiKey}&alt=sse`;
+
+    const contentsPayload = chatHistory.map(h => ({
+      role: h.role === "user" ? "user" : "model",
+      parts: [{ text: h.content }]
+    }));
+
+    // Inject System Instruction and Web Search Context into last prompt
+    if (webSearchContext) {
+      contentsPayload[contentsPayload.length - 1].parts[0].text = `${webSearchContext}\n\nCâu hỏi người dùng: ${prompt}`;
+    }
+
+    const bodyPayload = {
+      system_instruction: {
+        parts: [{ text: SYSTEM_INSTRUCTION }]
+      },
+      contents: contentsPayload
+    };
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyPayload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const msg = errData?.error?.message || `Mã lỗi API: ${res.status}`;
+      throw new Error(`Google Gemini Cloud API: ${msg}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let fullText = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.replace("data: ", "").trim();
+          if (!jsonStr) continue;
+
+          try {
+            const data = JSON.parse(jsonStr);
+            const candidates = data.candidates;
+            if (candidates && candidates[0]?.content?.parts[0]?.text) {
+              const textChunk = candidates[0].content.parts[0].text;
+              fullText += textChunk;
+              renderMarkdown(textWrapper, fullText);
+              scrollToBottom();
+            }
+          } catch (err) {
+            console.error("Gemini parse error:", err);
+          }
+        }
+      }
+    }
+
+    return fullText;
+  }
+
+  // Stream Response from Local FastAPI / Ollama Backend
+  async function streamLocalOllamaResponse(prompt, textWrapper, msgContentElement) {
+    const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: prompt,
+        messages: chatHistory,
+        model: currentSelectedModel,
+        web_search: isWebSearchActive
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server Local code: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let fullText = "";
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.replace("data: ", "").trim();
+          if (!jsonStr) continue;
+
+          try {
+            const data = JSON.parse(jsonStr);
+            if (data.sources && data.sources.length > 0) {
+              renderSourcesList(msgContentElement, data.sources);
+            }
+            if (data.error) {
+              fullText += `\n*[Lỗi: ${data.error}]*`;
+              break;
+            }
+            if (data.content) {
+              fullText += data.content;
+              renderMarkdown(textWrapper, fullText);
+              scrollToBottom();
+            }
+          } catch (err) {
+            console.error("Parse error:", err);
+          }
+        }
+      }
+    }
+
+    return fullText;
+  }
+
+  // 9. Form Submit & Main Chat Routing
   chatForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const prompt = chatInput.value.trim();
@@ -266,71 +500,20 @@ document.addEventListener("DOMContentLoaded", () => {
     sendBtn.disabled = true;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: prompt,
-          messages: chatHistory,
-          model: currentSelectedModel,
-          web_search: isWebSearchActive
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server code: ${response.status}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
       let fullText = "";
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const jsonStr = line.replace("data: ", "").trim();
-            if (!jsonStr) continue;
-
-            try {
-              const data = JSON.parse(jsonStr);
-              
-              // Handle Sources Render inside msgContent
-              if (data.sources && data.sources.length > 0) {
-                renderSourcesList(msgContent, data.sources);
-              }
-
-              if (data.error) {
-                fullText += `\n*[Lỗi: ${data.error}]*`;
-                break;
-              }
-
-              if (data.content) {
-                fullText += data.content;
-                renderMarkdown(textWrapper, fullText);
-                scrollToBottom();
-              }
-            } catch (err) {
-              console.error("Parse error:", err);
-            }
-          }
-        }
+      if (currentSelectedModel.startsWith("gemini-")) {
+        fullText = await streamGeminiCloudResponse(prompt, textWrapper, msgContent);
+      } else {
+        fullText = await streamLocalOllamaResponse(prompt, textWrapper, msgContent);
       }
 
       chatHistory.push({ role: "assistant", content: fullText });
       renderMarkdown(textWrapper, fullText, true);
 
     } catch (err) {
-      console.error("Streaming error:", err);
-      const serverNotice = `🌿 **Giao diện Web AI Vi Mạch đã sẵn sàng!**\n\nĐể kết nối với AI Engine và sinh câu trả lời cục bộ trên máy của bạn:\n1. Hãy mở file **Run_Web_AI_ViMach.bat** trong thư mục dự án.\n2. Hoặc khởi chạy backend server tại \`http://localhost:8000\`.\n\n*(Chi tiết chi tiết xem tại file README.md trong mã nguồn)*.`;
-      renderMarkdown(textWrapper, serverNotice, true);
+      console.error("Chat error:", err);
+      const errMsg = `⚠️ **Không thể kết nối:** ${err.message}\n\n*Mẹo: Bạn có thể nhấn biểu tượng ⚙️ Cài đặt ở góc trên bên phải để nhập Google Gemini API Key miễn phí và trò chuyện trực tiếp 24/7 mà không cần máy chủ local!*`;
+      renderMarkdown(textWrapper, errMsg, true);
     } finally {
       isGenerating = false;
       sendBtn.disabled = chatInput.value.trim().length === 0;
@@ -365,7 +548,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
-  // Append Message DOM (Clean Layout Guarantee)
+  // Append Message DOM
   function appendMessage(role, text, isPlaceholder = false) {
     const row = document.createElement("div");
     row.className = `message-row ${role}`;
