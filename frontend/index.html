@@ -23,7 +23,7 @@
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
   
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
@@ -104,14 +104,32 @@
           <div class="custom-model-dropdown" id="customModelDropdown">
             <button type="button" class="dropdown-trigger" id="dropdownTrigger">
               <span class="trigger-icon">🌿</span>
-              <span class="trigger-text" id="selectedModelTitle">Đang tải mô hình...</span>
+              <span class="trigger-text" id="selectedModelTitle">AI Vi Mạch Local</span>
               <i class="fa-solid fa-chevron-down trigger-arrow"></i>
             </button>
 
             <div class="dropdown-menu" id="dropdownMenu">
               <div class="menu-header">Mô hình AI Bán Dẫn</div>
               <div class="model-items-list" id="modelItemsList">
-                <!-- Populated via JavaScript -->
+                <div class="model-item active" data-model="vi-mach-ai:latest">
+                  <div class="model-item-info">
+                    <span class="model-item-name">🌿 AI Vi Mạch Local</span>
+                    <span class="model-item-tag">Chuyên biệt Bán Dẫn</span>
+                  </div>
+                  <i class="fa-solid fa-check model-item-check"></i>
+                </div>
+                <div class="model-item" data-model="qwen2.5:1.5b">
+                  <div class="model-item-info">
+                    <span class="model-item-name">⚡ Qwen 2.5 (1.5B)</span>
+                    <span class="model-item-tag">Tốc độ & Suy luận cao</span>
+                  </div>
+                </div>
+                <div class="model-item" data-model="qwen2.5:0.5b">
+                  <div class="model-item-info">
+                    <span class="model-item-name">🚀 Qwen 2.5 (0.5B)</span>
+                    <span class="model-item-tag">Siêu nhẹ & Nhanh</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -120,7 +138,7 @@
         <div class="top-right">
           <div class="eco-badge" id="statusBadge">
             <span class="status-dot"></span>
-            <span id="statusText">Đang kết nối...</span>
+            <span id="statusText">Sẵn sàng (Local Engine)</span>
           </div>
 
           <button class="icon-btn" id="themeToggleBtn" title="Đổi giao diện Tối / Sáng">
@@ -179,7 +197,7 @@
       <div class="bottom-input-wrapper">
         <form class="chat-input-box" id="chatForm">
           
-          <!-- Web Search Toggle Button (ChatGPT Style) -->
+          <!-- Web Search Toggle Button -->
           <button type="button" class="web-search-btn active" id="webSearchToggleBtn" title="Bật/tắt Tìm kiếm Web Real-time">
             <i class="fa-solid fa-globe"></i>
             <span>Tra cứu Web</span>
@@ -204,6 +222,6 @@
   </div>
 
   <!-- App Script -->
-  <script src="/js/app.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
