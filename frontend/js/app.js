@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AI VI MẠCH - FRONTEND SCRIPT (GEMINI CLOUD AI API KEY FORMAT VALIDATOR)
+   AI VI MẠCH - FRONTEND SCRIPT (GEMINI CLOUD AI SUPPORTING AQ.Ab8 & AIzaSy KEYS)
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -162,11 +162,8 @@ document.addEventListener("DOMContentLoaded", () => {
     saveApiKeyBtn.addEventListener("click", () => {
       const val = apiKeyInput.value.trim();
       if (val) {
-        if (!val.startsWith("AIzaSy")) {
-          alert("⚠️ Chú ý: Chuỗi bạn vừa nhập không phải API Key của Gemini.\n\nAPI Key của Google Gemini luôn bắt đầu bằng 'AIzaSy...'. Trong trang Google AI Studio, bạn hãy nhấp vào nút [Copy key] ở góc dưới bên phải cửa sổ 'API key details' để chép đúng chìa khóa bí mật nhé!");
-        }
         localStorage.setItem("gemini_api_key", val);
-        alert("Đã lưu API Key thành công!");
+        alert("Đã lưu Google Gemini API Key thành công!");
       } else {
         localStorage.removeItem("gemini_api_key");
         alert("Đã xóa API Key.");
@@ -327,21 +324,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Robust Stream Response from Google Gemini Cloud API
+  // Robust Stream Response from Google Gemini Cloud API supporting both AQ.Ab8... and AIzaSy... API Keys
   async function streamGeminiCloudResponse(prompt, textWrapper, msgContentElement) {
     let apiKey = getStoredApiKey();
     if (!apiKey) {
-      const userKey = window.prompt("Nhập Google Gemini API Key của bạn (bắt đầu bằng 'AIzaSy...'):");
+      const userKey = window.prompt("Nhập Google Gemini API Key của bạn:");
       if (userKey && userKey.trim()) {
         apiKey = userKey.trim();
         localStorage.setItem("gemini_api_key", apiKey);
       } else {
         throw new Error("Cần có Google Gemini API Key để trò chuyện trực tiếp trên Cloud. Vui lòng nhấn nút ⚙️ Cài đặt ở góc trên bên phải để dán Key!");
       }
-    }
-
-    if (!apiKey.startsWith("AIzaSy")) {
-      throw new Error("API Key vừa nhập không đúng định dạng. API Key chính thức của Google Gemini luôn bắt đầu bằng chuỗi 'AIzaSy...'. Trong cửa sổ Google AI Studio, bạn hãy nhấp vào nút [Copy key] ở góc dưới bên phải để chép đúng chìa khóa bí mật nhé!");
     }
 
     let webSearchContext = "";
@@ -374,9 +367,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const candidates = [
       { model: selected, ver: "v1beta" },
       { model: "gemini-2.0-flash", ver: "v1beta" },
-      { model: "gemini-1.5-flash-latest", ver: "v1beta" },
-      { model: "gemini-1.5-flash", ver: "v1" },
-      { model: "gemini-1.5-pro", ver: "v1beta" }
+      { model: "gemini-1.5-flash", ver: "v1beta" },
+      { model: "gemini-1.5-pro", ver: "v1beta" },
+      { model: "gemini-1.5-flash", ver: "v1" }
     ];
 
     let lastError = null;
@@ -552,7 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error("Chat error:", err);
-      const errMsg = `⚠️ **Không thể kết nối:** ${err.message}\n\n*Mẹo: Bạn có thể nhấn biểu tượng ⚙️ Cài đặt ở góc trên bên phải để kiểm tra lại Google Gemini API Key miễn phí!*`;
+      const errMsg = `⚠️ **Không thể kết nối:** ${err.message}\n\n*Mẹo: Bạn có thể nhấn biểu tượng ⚙️ Cài đặt ở góc trên bên phải để kiểm tra lại Google Gemini API Key!*`;
       renderMarkdown(textWrapper, errMsg, true);
     } finally {
       isGenerating = false;
