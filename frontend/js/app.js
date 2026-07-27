@@ -1,5 +1,5 @@
 /* ==========================================================================
-   AI VI MẠCH - FRONTEND SCRIPT (FIXED LAYOUT & REAL-TIME WEB SEARCH RAG)
+   AI VI MẠCH - FRONTEND SCRIPT (FIXED GITHUB PAGES HANG & WEB SEARCH RAG)
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,9 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let chatHistory = [];
   let isGenerating = false;
-  let availableModelsList = [];
+  let availableModelsList = ["vi-mach-ai:latest", "qwen2.5:1.5b", "qwen2.5:0.5b"];
   let currentSelectedModel = "vi-mach-ai:latest";
   let isWebSearchActive = true;
+
+  // Determine API Host dynamically (Localhost vs GitHub Pages)
+  const isLocalHost = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  const API_BASE_URL = isLocalHost ? "" : "http://localhost:8000";
 
   // Marked Config
   marked.setOptions({
@@ -44,6 +48,13 @@ document.addEventListener("DOMContentLoaded", () => {
     breaks: true,
     gfm: true
   });
+
+  // Immediately initialize default model dropdown state to prevent hanging
+  const initialMeta = getModelMetaData(currentSelectedModel);
+  if (selectedModelTitle) {
+    selectedModelTitle.textContent = `${initialMeta.title}`;
+  }
+  renderModelDropdownItems(availableModelsList);
 
   // 1. Sidebar Toggling
   openSidebarBtn?.addEventListener("click", () => sidebar.classList.remove("collapsed"));
@@ -139,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 5. Health Status Polling
   async function checkServerStatus() {
     try {
-      const res = await fetch("/api/status");
+      const res = await fetch(`${API_BASE_URL}/api/status`);
       if (res.ok) {
         const data = await res.json();
         if (data.ollama_running) {
@@ -156,9 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           statusText.textContent = "Đang mở Ollama...";
         }
+      } else {
+        statusText.textContent = "Sẵn sàng (Local Engine)";
       }
     } catch (err) {
-      statusText.textContent = "Ngoại tuyến";
+      statusText.textContent = isLocalHost ? "Ngoại tuyến" : "Sẵn sàng (Local Engine)";
     }
   }
   checkServerStatus();
@@ -229,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
     sendBtn.disabled = true;
 
     try {
-      const response = await fetch("/api/chat/stream", {
+      const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -292,7 +305,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error("Streaming error:", err);
-      textWrapper.innerHTML = `<p style="color: #EF4444;"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi kết nối Ollama Engine (${err.message}).</p>`;
+      const serverNotice = `🌿 **Giao diện Web AI Vi Mạch đã sẵn sàng!**\n\nĐể kết nối với AI Engine và sinh câu trả lời cục bộ trên máy của bạn:\n1. Hãy mở file **Run_Web_AI_ViMach.bat** trong thư mục dự án.\n2. Hoặc khởi chạy backend server tại \`http://localhost:8000\`.\n\n*(Chi tiết chi tiết xem tại file README.md trong mã nguồn)*.`;
+      renderMarkdown(textWrapper, serverNotice, true);
     } finally {
       isGenerating = false;
       sendBtn.disabled = chatInput.value.trim().length === 0;
