@@ -452,61 +452,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Stream Response from Local FastAPI / Ollama Backend
   async function streamLocalOllamaResponse(prompt, textWrapper, msgContentElement) {
-    const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: prompt,
-        messages: chatHistory,
-        model: currentSelectedModel,
-        web_search: isWebSearchActive
-      })
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: prompt,
+          messages: chatHistory,
+          model: currentSelectedModel,
+          web_search: isWebSearchActive
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error(`Server Local code: ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`Server Local code: ${response.status}`);
+      }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-    let fullText = "";
-    let buffer = "";
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let fullText = "";
+      let buffer = "";
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n\n");
-      buffer = lines.pop() || "";
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const jsonStr = line.replace("data: ", "").trim();
-          if (!jsonStr) continue;
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const jsonStr = line.replace("data: ", "").trim();
+            if (!jsonStr) continue;
 
-          try {
-            const data = JSON.parse(jsonStr);
-            if (data.sources && data.sources.length > 0) {
-              renderSourcesList(msgContentElement, data.sources);
+            try {
+              const data = JSON.parse(jsonStr);
+              if (data.sources && data.sources.length > 0) {
+                renderSourcesList(msgContentElement, data.sources);
+              }
+              if (data.error) {
+                fullText += `\n*[Lỗi: ${data.error}]*`;
+                break;
+              }
+              if (data.content) {
+                fullText += data.content;
+                renderMarkdown(textWrapper, fullText);
+                scrollToBottom();
+              }
+            } catch (err) {
+              console.error("Parse error:", err);
             }
-            if (data.error) {
-              fullText += `\n*[Lỗi: ${data.error}]*`;
-              break;
-            }
-            if (data.content) {
-              fullText += data.content;
-              renderMarkdown(textWrapper, fullText);
-              scrollToBottom();
-            }
-          } catch (err) {
-            console.error("Parse error:", err);
           }
         }
       }
-    }
 
-    return fullText;
+      return fullText;
+
+    } catch (err) {
+      const apiKey = getStoredApiKey();
+      if (apiKey) {
+        console.warn("Local server unreachable, automatically falling back to Gemini Cloud AI...");
+        return await streamGeminiCloudResponse(prompt, textWrapper, msgContentElement);
+      }
+      throw new Error(`Chưa kết nối được Server Local! Để sử dụng 'AI Vi Mạch Local' (Ollama), bạn hãy bật file 'Run_Web_AI_ViMach.bat' trong thư mục máy tính của bạn.\n\n*Hoặc chọn mô hình 'Gemini 2.5 Flash' trên thanh menu để trò chuyện trực tiếp 24/7 từ Đám mây!*`);
+    }
   }
 
   // 9. Form Submit & Main Chat Routing
