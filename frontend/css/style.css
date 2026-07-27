@@ -772,6 +772,15 @@ body {
   resize: none;
   max-height: 180px;
   min-height: 24px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#chatInput::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 #chatInput::placeholder {
