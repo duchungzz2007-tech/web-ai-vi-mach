@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 1. Sidebar Toggling
-  openSidebarBtn?.addEventListener("click", () => sidebar.classList.remove("collapsed"));
+  openSidebarBtn?.addEventListener("click", () => sidebar.classList.toggle("collapsed"));
   closeSidebarBtn?.addEventListener("click", () => sidebar.classList.add("collapsed"));
 
   // 2. Web Search Toggle Logic
