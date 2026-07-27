@@ -1,0 +1,23 @@
+# Python & Virtual Envs
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Large Model Files & Heavy Binaries
+ollama_models/
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.gguf
+
+# OS & IDE Raddish
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
